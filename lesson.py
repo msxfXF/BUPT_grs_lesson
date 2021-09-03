@@ -1,10 +1,10 @@
 '''
 Author: XF
 Date: 2021-09-02 20:08:33
-LastEditTime: 2021-09-03 19:19:41
+LastEditTime: 2021-09-04 07:55:17
 LastEditors: XF
 Description: 
-FilePath: \\BuptMasterClass\\xyw.py
+FilePath: \\undefinedc:\\Users\\xf\\Desktop\\BuptMasterClass\\BuptMasterClass\\xyw.py
 '''
 from bs4 import BeautifulSoup
 import time
@@ -15,7 +15,11 @@ import schedule
 import time
 import datetime
 header = {}
-ids = ['3131100787']
+
+# 新时代中国特色社会主义理论与实践13班
+# 研究生英语国际学术交流8班
+
+ids = [["3311101694","研究生英语国际学术交流8班"], ["3321101666","新时代中国特色社会主义理论与实践13班"]] #[[id, 班级或上课时间], ...]
 def login(cookiestr):
     global header
     header = {
@@ -37,7 +41,7 @@ def get_class_page(header, serverid = 0):
     return soup
 
 
-def xuanke(html, serverid = 0):
+def xuanke(html,id, serverid = 0):
     global ids
     res = re.findall(r'EID=(.*?)\'', html)
     if len(res)==0:
@@ -52,29 +56,25 @@ def xuanke(html, serverid = 0):
     __EVENTVALIDATION = re.findall(r'<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="(.*?)" />', source)[0]
     __VIEWSTATE = re.findall(r'<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="(.*?)"', source)[0]
 
+    soup = BeautifulSoup(source, 'lxml').find_all('tr', onmouseout="SetRowBgColor(this,false)" )
+    for _,s in enumerate(soup):
+        if id[1] in str(s):
+            print(id[1])
+            print(str(s))
+            __EVENTTARGET = re.findall(r"__doPostBack\('(.*?)',", str(s))[0]
+    
+    if __EVENTTARGET == None:
+        print("选课失败!!!")
+        return
     payload = {
-        'ctl00$ScriptManager1': 'ctl00$contentParent$UpdatePanel2 | ctl00$contentParent$dgData$ctl02$ImageButton1',
-        '__EVENTTARGET': '',
-        '__EVENTARGUMENT': '',
-        '__LASTFOCUS': '',
-        '__VIEWSTATEGENERATOR': 'BD5D4783',
-        '__VIEWSTATEENCRYPTED': '',
-        '__VIEWSTATE': __VIEWSTATE,
-        '__EVENTVALIDATION': __EVENTVALIDATION,
-        'ctl00$contentParent$drpXqu$drpXqu': '',
-        '__ASYNCPOST': 'true',
-        'ctl00$contentParent$dgData$ctl02$ImageButton1.x': '11',
-        'ctl00$contentParent$dgData$ctl02$ImageButton1.y': '8'
-    }
-    payload = {
-        'ctl00$ScriptManager1':'ctl00$contentParent$UpdatePanel2|ctl00$contentParent$dgData$ctl02$lbUpdateG',
+        'ctl00$ScriptManager1':'ctl00$contentParent$UpdatePanel2|' + __EVENTTARGET,
         'ctl00$contentParent$drpXqu$drpXqu':'',
         '__VIEWSTATEGENERATOR' : 'BD5D4783',
         '__VIEWSTATEENCRYPTED' :'',
         '__VIEWSTATE':__VIEWSTATE,
         '__LASTFOCUS':'',
         '__EVENTVALIDATION':__EVENTVALIDATION,
-        '__EVENTTARGET': 'ctl00$contentParent$dgData$ctl02$lbUpdateG',
+        '__EVENTTARGET': __EVENTTARGET,
         '__EVENTARGUMENT':'',
         '__ASYNCPOST':'true'
     }
@@ -89,9 +89,9 @@ def xuanke(html, serverid = 0):
         return False
 
 if __name__ == "__main__":
-    target_time = time.mktime(time.strptime("2021-9-3 17:59:00", "%Y-%m-%d %H:%M:%S"))
+    target_time = time.mktime(time.strptime("2021-9-4 7:59:00", "%Y-%m-%d %H:%M:%S"))
 
-    header = login("")
+    header = login("cookies") #这里需要修改
     counter = 1
     while True:
         now = time.time()
@@ -112,16 +112,17 @@ if __name__ == "__main__":
         for id in tmp_ids:
             for s in classes:
                 html = str(s)
-                if id in html:
+                if id[0] in html:
                     if '正在选课' in html:
-                        threading.Thread(target=xuanke, args=(html,)).start()
+                        threading.Thread(target=xuanke, args=(html,id,)).start()
                         # xuanke(html)
                     else:
-                        print('无法选课 {}'.format(id))
+                        print('无法选课 {}'.format(id[1]))
                         break
                     break
             else:
-                print('课程id不存在 {}'.format(id))
+                print('课程id不存在 {}'.format(id[1]))
                 # ids.remove(id)
         time.sleep(0.5)
         counter += 1
+
